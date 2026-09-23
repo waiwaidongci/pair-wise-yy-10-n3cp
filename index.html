@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>小型漆线雕工坊管理</title>
+  <title>漆线雕工坊 · 定级审签与证书发放台</title>
   <style>
     :root {
       --bg: #eef3f0;
@@ -30,6 +30,7 @@
     button.warn { background: var(--amber); }
     button.danger { background: var(--red); }
     button.violet { background: var(--violet); }
+    button.sm { min-height: 30px; padding: 5px 10px; margin-top: 6px; font-size: 12px; }
     label { display: grid; gap: 5px; font-size: 12px; color: var(--muted); }
     .top { display: grid; grid-template-columns: 360px 1fr; gap: 18px; align-items: start; }
     .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
@@ -47,23 +48,63 @@
     .col h3 { display: flex; justify-content: space-between; margin: 0 0 10px; font-size: 15px; }
     .actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; }
     .actions button { flex: 1; min-width: 82px; font-size: 12px; padding: 7px 8px; }
-    dialog { border: 1px solid var(--line); border-radius: 8px; width: min(560px, calc(100vw - 24px)); padding: 0; }
+    dialog { border: 1px solid var(--line); border-radius: 8px; width: min(640px, calc(100vw - 24px)); padding: 0; }
     dialog::backdrop { background: rgba(0, 0, 0, 0.3); }
     .dialog-body { padding: 16px; display: grid; gap: 10px; }
     .empty { color: var(--muted); font-size: 13px; padding: 8px 0; }
+
+    /* 定级审签区 */
+    .desk { display: grid; grid-template-columns: 1.15fr 1fr; gap: 18px; align-items: start; }
+    #certQueue, #certLedger { display: grid; gap: 10px; }
+    .queue-card { border: 1px solid var(--line); border-left: 4px solid var(--violet); border-radius: 8px; padding: 11px; background: #fcfbff; display: grid; gap: 8px; }
+    .queue-card.rejudge { border-left-color: var(--amber); background: #fffdf5; }
+    .qhead { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .qtime { margin-left: auto; }
+    .tag { font-size: 11px; border: 1px solid var(--violet); color: var(--violet); border-radius: 20px; padding: 1px 9px; }
+    .rejudge-tag { border-color: var(--amber); color: var(--amber); }
+    .qform { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; align-items: end; }
+    .qactions { grid-column: 1 / -1; }
+    .qerror { font-size: 12px; color: var(--red); background: #fbeeef; border-radius: 6px; padding: 6px 8px; }
+
+    .cert { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: #fbfdfb; }
+    .cert.voided { background: #f6f7f6; opacity: 0.85; }
+    .cert-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .certstate { font-size: 12px; border-radius: 20px; padding: 1px 10px; }
+    .certstate.ok { color: var(--teal); border: 1px solid var(--teal); }
+    .certstate.dead { color: var(--muted); border: 1px solid var(--line); }
+    .voidnote { color: var(--red); font-size: 12px; }
+
+    .badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+    .badge { font-size: 11px; border-radius: 20px; padding: 2px 10px; border: 1px solid; }
+    .badge.cert { color: var(--teal); border-color: var(--teal); background: #f0f7f5; }
+    .badge.grading { color: var(--violet); border-color: var(--violet); background: #f4f2fa; }
+    .badge.void { color: var(--muted); border-color: var(--line); background: #f4f6f5; }
+    .badge.ready { color: var(--amber); border-color: var(--amber); background: #fdf8ec; }
+    .certline { font-size: 13px; border-radius: 6px; padding: 7px 9px; background: #f4f6f5; }
+    .okline { background: #eef6f3; border: 1px solid #bcd8d0; }
+    .deadline { background: #f6f4f0; border: 1px solid #e0d6c4; color: var(--muted); }
+    #warnVoid { font-size: 12px; color: var(--red); background: #fbeeef; border-radius: 6px; padding: 7px 9px; }
+    .logline { font-size: 12px; color: var(--muted); border-bottom: 1px dashed #dde5e1; padding: 4px 0; }
+    #history { border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; max-height: 180px; overflow-y: auto; background: #fcfdfc; }
+    #history h3 { margin: 0 0 6px; font-size: 13px; }
+
+    #toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 16px); background: #22302c; color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 13px; opacity: 0; pointer-events: none; transition: all .2s ease; max-width: calc(100vw - 32px); }
+    #toast.show { opacity: 1; transform: translate(-50%, 0); }
+    #toast.error { background: var(--red); }
+
     @media (max-width: 980px) {
       header { display: block; padding: 18px; }
       main { padding: 16px; }
-      .top, .lists, .toolbar { grid-template-columns: 1fr; }
-      .grid2 { grid-template-columns: 1fr; }
+      .top, .lists, .toolbar, .desk { grid-template-columns: 1fr; }
+      .grid2, .qform { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <header>
     <div>
-      <h1>小型漆线雕工坊管理</h1>
-      <div class="sub">贴线、阴干、上金粉、待交付的作品流转与缺陷追踪</div>
+      <h1>漆线雕工坊 · 定级审签与证书发放台</h1>
+      <div class="sub">贴线、阴干、上金粉、待交付流转；满工无缺陷方可申请定级，审签后发放唯一编号证书</div>
     </div>
     <button id="exportBtn" class="secondary">导出 JSON</button>
   </header>
@@ -118,172 +159,60 @@
         <div id="board" class="board"></div>
       </section>
     </section>
+
+    <section class="desk">
+      <section class="panel">
+        <h2>定级审签 · 证书队列（未结束定级）</h2>
+        <div class="sub" style="margin-bottom:10px">仅满工且无缺陷的作品可申请；等级、检验人、签发人齐备方可签发，检验与签发同人则整单拒绝。</div>
+        <div id="certQueue"></div>
+      </section>
+      <section class="panel">
+        <h2>证书台账（唯一编号 · 全量留痕）</h2>
+        <div class="sub" style="margin-bottom:10px">改动胎体、纹样、线条或缺陷后旧证失效只读，并按新值重判、另行发证。</div>
+        <div id="certLedger"></div>
+      </section>
+    </section>
   </main>
+
+  <datalist id="staffList">
+    <option value="林砚秋"></option>
+    <option value="周广业"></option>
+    <option value="陈守拙"></option>
+    <option value="黄素绫"></option>
+  </datalist>
 
   <dialog id="detailDialog">
     <div class="dialog-body">
       <h2 id="detailTitle">作品详情</h2>
       <div id="detailContent" class="meta"></div>
-      <label>记录缺陷
-        <input id="defectInput" placeholder="断线/翘线位置">
-      </label>
+      <div class="grid2">
+        <label>胎体材质<input id="baseInput"></label>
+        <label>纹样主题<input id="themeInput"></label>
+      </div>
+      <div class="grid2">
+        <label>线条粗细<select id="lineInput"><option>细线</option><option>中线</option><option>粗线</option><option>混合线</option></select></label>
+        <label>贴线进度<input id="progressInput" type="number" min="0" max="100"></label>
+      </div>
+      <div class="grid2">
+        <label>金粉状态<select id="goldInput"><option>未处理</option><option>试扫粉</option><option>已上金粉</option></select></label>
+        <label>缺陷位置<input id="defectEditInput" placeholder="无缺陷请留空"></label>
+      </div>
+      <div id="warnVoid">该作品存在有效证书或进行中的定级：保存对胎体/纹样/线条/缺陷的改动将使旧证失效，并按新值自动重判。</div>
+      <div id="history">
+        <h3>作品履历</h3>
+        <div id="historyLog"></div>
+      </div>
       <div class="actions">
-        <button id="saveDefect" class="warn">保存缺陷</button>
+        <button id="saveDetail" class="warn">保存改动（触发重判）</button>
         <button id="closeDialog" class="secondary">关闭</button>
       </div>
     </div>
   </dialog>
 
-  <script>
-    const statuses = ["贴线中", "待阴干", "上金粉", "待交付"];
-    const storageKey = "zfl42Works";
-    const today = new Date().toISOString().slice(0, 10);
-    const seed = [
-      { id: crypto.randomUUID(), base: "木胎香盒", theme: "海水江崖", line: "细线", progress: 70, dryDate: today, gold: "未处理", defect: "", delivery: "2026-06-26", status: "待阴干", note: "边线需保持低浮雕感", logs: ["创建作品"] },
-      { id: crypto.randomUUID(), base: "脱胎盘", theme: "折枝梅", line: "混合线", progress: 95, dryDate: "2026-06-20", gold: "试扫粉", defect: "左侧枝干翘线", delivery: "2026-06-23", status: "上金粉", note: "客户要求金粉偏暗", logs: ["创建作品", "记录翘线"] },
-      { id: crypto.randomUUID(), base: "竹胎笔筒", theme: "云雷纹", line: "中线", progress: 40, dryDate: "2026-06-24", gold: "未处理", defect: "", delivery: "2026-06-30", status: "贴线中", note: "", logs: ["创建作品"] }
-    ];
-    let works = JSON.parse(localStorage.getItem(storageKey) || "null") || seed;
-    let activeId = null;
+  <div id="toast"></div>
 
-    const form = document.querySelector("#workForm");
-    const board = document.querySelector("#board");
-    const statusFilter = document.querySelector("#statusFilter");
-    const themeFilter = document.querySelector("#themeFilter");
-    const sortMode = document.querySelector("#sortMode");
-    const dialog = document.querySelector("#detailDialog");
-
-    form.dryDate.value = today;
-    form.delivery.value = new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10);
-    statusFilter.innerHTML = `<option value="">全部状态</option>` + statuses.map(s => `<option>${s}</option>`).join("");
-
-    function save() {
-      localStorage.setItem(storageKey, JSON.stringify(works));
-    }
-
-    function filtered() {
-      return works
-        .filter(w => !statusFilter.value || w.status === statusFilter.value)
-        .filter(w => !themeFilter.value || w.theme.includes(themeFilter.value.trim()))
-        .sort((a, b) => (a[sortMode.value] || "").localeCompare(b[sortMode.value] || ""));
-    }
-
-    function updateStatus(id, status) {
-      const work = works.find(w => w.id === id);
-      work.status = status;
-      if (status === "待阴干") work.dryDate = new Date().toISOString().slice(0, 10);
-      if (status === "上金粉") work.gold = "已上金粉";
-      if (status === "待交付") work.progress = 100;
-      work.logs.push(`${new Date().toLocaleString()} 更新为 ${status}`);
-      save();
-      render();
-    }
-
-    function recordDefect(id, text) {
-      const work = works.find(w => w.id === id);
-      const value = text || prompt("输入断线/翘线位置");
-      if (!value) return;
-      work.defect = work.defect ? `${work.defect}; ${value}` : value;
-      work.logs.push(`${new Date().toLocaleString()} 缺陷：${value}`);
-      save();
-      render();
-    }
-
-    function showDetail(id) {
-      activeId = id;
-      const w = works.find(item => item.id === id);
-      document.querySelector("#detailTitle").textContent = `${w.theme} · ${w.base}`;
-      document.querySelector("#detailContent").innerHTML = `
-        胎体材质：${w.base}<br>线条粗细：${w.line}<br>贴线进度：${w.progress}%<br>
-        阴干日期：${w.dryDate}<br>金粉状态：${w.gold}<br>缺陷位置：${w.defect || "无"}<br>
-        交付日期：${w.delivery}<br>当前状态：${w.status}<br>备注：${w.note || "无"}<br>
-        流转记录：${w.logs.join(" / ")}
-      `;
-      document.querySelector("#defectInput").value = "";
-      dialog.showModal();
-    }
-
-    function renderSummaries() {
-      const todayDry = works.filter(w => w.dryDate <= today && w.status === "待阴干");
-      const defects = works.filter(w => w.defect);
-      const delivery = [...works].sort((a, b) => a.delivery.localeCompare(b.delivery)).slice(0, 4);
-      document.querySelector("#todayDry").innerHTML = todayDry.length ? todayDry.map(w => `<div class="item" onclick="showDetail('${w.id}')"><b>${w.theme}</b><div class="meta">${w.base} · ${w.dryDate}</div></div>`).join("") : `<div class="empty">暂无</div>`;
-      document.querySelector("#defectList").innerHTML = defects.length ? defects.map(w => `<div class="item overdue" onclick="showDetail('${w.id}')"><b>${w.theme}</b><div class="meta">${w.defect}</div></div>`).join("") : `<div class="empty">暂无</div>`;
-      document.querySelector("#deliveryList").innerHTML = delivery.map(w => `<div class="item" onclick="showDetail('${w.id}')"><b>${w.theme}</b><div class="meta">${w.delivery} · ${w.status}</div></div>`).join("");
-    }
-
-    function renderBoard() {
-      const list = filtered();
-      board.innerHTML = statuses.map(status => {
-        const cards = list.filter(w => w.status === status);
-        return `<section class="col">
-          <h3><span>${status}</span><span>${cards.length}</span></h3>
-          ${cards.length ? cards.map(w => `<article class="item ${w.defect ? "overdue" : ""}" onclick="showDetail('${w.id}')">
-            <b>${w.theme}</b>
-            <div class="meta">${w.base} · ${w.line}<br>进度 ${w.progress}% · 阴干 ${w.dryDate}<br>金粉：${w.gold} · 交付：${w.delivery}<br>${w.defect ? "缺陷：" + w.defect : "缺陷：无"}</div>
-            <div class="actions" onclick="event.stopPropagation()">
-              ${statuses.map(s => `<button class="${s === status ? "secondary" : ""}" onclick="updateStatus('${w.id}', '${s}')">${s}</button>`).join("")}
-              <button class="warn" onclick="recordDefect('${w.id}')">记缺陷</button>
-            </div>
-          </article>`).join("") : `<div class="empty">暂无作品</div>`}
-        </section>`;
-      }).join("");
-    }
-
-    function render() {
-      renderSummaries();
-      renderBoard();
-    }
-
-    form.addEventListener("submit", event => {
-      event.preventDefault();
-      const data = Object.fromEntries(new FormData(form).entries());
-      works.unshift({
-        id: crypto.randomUUID(),
-        base: data.base,
-        theme: data.theme,
-        line: data.line,
-        progress: Number(data.progress),
-        dryDate: data.dryDate,
-        gold: data.gold,
-        defect: data.defect,
-        delivery: data.delivery,
-        status: data.status,
-        note: data.note,
-        logs: [`${new Date().toLocaleString()} 创建作品`]
-      });
-      form.reset();
-      form.dryDate.value = today;
-      form.delivery.value = new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10);
-      save();
-      render();
-    });
-
-    document.querySelector("#saveDefect").addEventListener("click", () => {
-      recordDefect(activeId, document.querySelector("#defectInput").value.trim());
-      showDetail(activeId);
-    });
-    document.querySelector("#closeDialog").addEventListener("click", () => dialog.close());
-    document.querySelector("#clearFilters").addEventListener("click", () => {
-      themeFilter.value = "";
-      statusFilter.value = "";
-      render();
-    });
-    [statusFilter, themeFilter, sortMode].forEach(el => el.addEventListener("input", render));
-    document.querySelector("#exportBtn").addEventListener("click", () => {
-      const blob = new Blob([JSON.stringify(works, null, 2)], { type: "application/json" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "lacquer-thread-works.json";
-      link.click();
-      URL.revokeObjectURL(link.href);
-    });
-
-    window.updateStatus = updateStatus;
-    window.recordDefect = recordDefect;
-    window.showDetail = showDetail;
-    save();
-    render();
-  </script>
+  <script src="store.js"></script>
+  <script src="grading.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
